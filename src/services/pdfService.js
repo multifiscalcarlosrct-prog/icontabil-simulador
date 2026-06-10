@@ -147,9 +147,10 @@ export async function gerar(resultado) {
 
   // ---------- Premissas (nota técnica) ----------
   const sn = prem.simples || {};
+  const fonteLabel = prem.fonteAliquota === 'calculadora' ? 'Calculadora oficial' : 'estimativa de referência';
   const pPremissas =
     `Regime regular: alíquota ${(Number(prem.aliquotaRegimeRegular || 0) * 100).toFixed(1)}% ` +
-    `(fonte: ${prem.fonteAliquota || '—'}). ` +
+    `(${fonteLabel}). ` +
     (sn.anexo
       ? `Simples: Anexo ${sn.anexo}, ${sn.faixa}ª faixa, alíquota efetiva ` +
         `${(Number(sn.aliquotaEfetiva || 0) * 100).toFixed(2)}% ` +

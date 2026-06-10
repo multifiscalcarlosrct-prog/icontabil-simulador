@@ -292,7 +292,7 @@ function renderResultado({ id, resultado, creditosRestantes, reaproveitado }) {
     </div>
 
     <p class="premissas">Alíquota do regime regular usada: ${(r.premissas.aliquotaRegimeRegular * 100).toFixed(1)}%
-      (fonte: ${r.premissas.fonteAliquota}).${simplesTxt}
+      (${r.premissas.fonteAliquota === 'calculadora' ? 'Calculadora oficial' : 'estimativa de referência'}).${simplesTxt}
       ${reaproveitado ? 'CNPJ já consultado — recalculado sem consumir novo crédito.' : ''}
       Créditos restantes: <b>${creditosRestantes}</b>.</p>
 
