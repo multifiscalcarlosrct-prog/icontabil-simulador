@@ -43,19 +43,24 @@ export async function simular(req, res, next) {
     } else {
       id = consultaRepo.gravar({ usuarioId, cnpj, payload: resultado }); // novo CNPJ → consome cota
 
-      // Lead qualificado (seção 8): cada novo CNPJ simulado vira um lead com regime + faturamento.
+      // Lead qualificado (seção 8): cada novo CNPJ simulado vira um lead.
+      // Campos alinhados aos scripts do N8N (SCRIPTS_WHATSAPP.md): nome, recomendacao,
+      // pct_pj, faturamento, setor, cnpj, creditos, regime_atual.
       // Best-effort: não bloqueia a resposta nem falha a simulação se o N8N estiver fora.
+      const brlFmt = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
       leadService
         .enviarLead({
           tipo: 'simulacao',
-          contato: req.usuario.contato,
-          cnpj,
-          razaoSocial: cadastro.razaoSocial || null,
-          regimeRecomendado: resultado.recomendacao, // 'puro' | 'hibrido'
+          contato: req.usuario.contato, // hoje = e-mail; vira WhatsApp quando capturarmos o telefone
+          nome: cadastro.razaoSocial || '(razão social indisponível)',
+          cnpj: cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5'),
+          regime_atual: 'Simples Nacional',
+          recomendacao: resultado.recomendacao, // 'puro' | 'hibrido'
           forca: resultado.forca,
-          faturamentoAnual: resultado.entrada.faturamentoAnual,
           setor: resultado.entrada.setor,
-          pctPJ: resultado.entrada.pctPJ,
+          faturamento: brlFmt.format(resultado.entrada.faturamentoAnual),
+          pct_pj: Math.round(resultado.entrada.pctPJ * 100),
+          creditos: cotaService.creditosRestantes(usuarioId),
         })
         .catch(() => {});
     }
