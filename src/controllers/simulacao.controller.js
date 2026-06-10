@@ -48,13 +48,18 @@ export async function simular(req, res, next) {
       // pct_pj, faturamento, setor, cnpj, creditos, regime_atual.
       // Best-effort: não bloqueia a resposta nem falha a simulação se o N8N estiver fora.
       const brlFmt = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
+      // regime_atual vem do cadastro (BrasilAPI: opção pelo Simples) — não é mais fixo.
+      const optante = cadastro.optanteSimples;
+      const regimeAtual =
+        optante === true ? 'Simples Nacional' : optante === false ? 'Não optante pelo Simples' : 'Não identificado';
       leadService
         .enviarLead({
           tipo: 'simulacao',
           contato: req.usuario.contato, // hoje = e-mail; vira WhatsApp quando capturarmos o telefone
           nome: cadastro.razaoSocial || '(razão social indisponível)',
           cnpj: cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5'),
-          regime_atual: 'Simples Nacional',
+          regime_atual: regimeAtual,
+          optante_simples: optante ?? null, // true | false | null (cadastro indisponível)
           recomendacao: resultado.recomendacao, // 'puro' | 'hibrido'
           forca: resultado.forca,
           setor: resultado.entrada.setor,
