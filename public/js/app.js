@@ -249,7 +249,39 @@ async function rodarSimulacao() {
     box.innerHTML = `<p class="erro">${dados.erro || 'Erro ao gerar o relatório.'}</p>`;
     return;
   }
+  if (dados.naoOptante) {
+    renderNaoOptante(dados);
+    return;
+  }
   renderResultado(dados);
+}
+
+// Empresa NÃO optante do Simples: a comparação puro vs. híbrido não se aplica (Opção A).
+function renderNaoOptante({ nome, cnpj }) {
+  $('#resultado-conteudo').innerHTML = `
+    <div class="banner-rec fraca">
+      <span class="rec-tag">Atenção</span>
+      <strong>Esta empresa não é optante do Simples Nacional</strong>
+      <p>Pelo cadastro na Receita${nome ? ` (${nome}, ${cnpj})` : ''}, esta empresa não consta como optante
+        do Simples Nacional. A escolha entre <b>Simples puro e híbrido</b> (CGSN nº 186/2026) é exclusiva
+        de optantes do Simples — empresas no regime regular (Lucro Presumido/Real) já apuram o IBS/CBS
+        "por fora", então essa comparação não se aplica ao seu caso.</p>
+    </div>
+
+    <div class="cta-lead">
+      <b>Quer uma análise do seu caso?</b>
+      <p>A iContábil IA pode avaliar o seu regime atual e o impacto real da Reforma Tributária na sua
+        operação. Fale com o nosso time — sem compromisso.</p>
+    </div>
+
+    <div class="acoes">
+      <button class="btn" id="btn-nova">Nova simulação</button>
+    </div>
+
+    <p class="disclaimer">Orientação preliminar com base no cadastro informado pela Receita Federal.
+      Não substitui análise individualizada por contador habilitado.</p>
+  `;
+  $('#btn-nova').addEventListener('click', reiniciar);
 }
 
 function renderResultado({ id, resultado, creditosRestantes, reaproveitado }) {

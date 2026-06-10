@@ -23,6 +23,33 @@ export async function simular(req, res, next) {
 
     // UF/município do cadastro alimentam a Calculadora oficial (fonte da alíquota).
     const cadastro = await cnpjService.buscarCadastral(cnpj).catch(() => ({}));
+    const cnpjFmt = cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+
+    // OPÇÃO A: a comparação puro vs. híbrido (CGSN 186/2026) é exclusiva de optante do Simples.
+    // Se o cadastro CONFIRMA que NÃO é optante (false), bloqueia a comparação — mas captura o
+    // lead (ótimo lead) e NÃO debita crédito. Se for null/indeterminado, segue normal.
+    if (cadastro.optanteSimples === false) {
+      const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
+      leadService
+        .enviarLead({
+          tipo: 'nao_optante_simples',
+          contato: req.usuario.contato,
+          nome: cadastro.razaoSocial || '(razão social indisponível)',
+          cnpj: cnpjFmt,
+          regime_atual: 'Não optante pelo Simples',
+          optante_simples: false,
+          setor: String(setor || '').toLowerCase(),
+          faturamento: brl.format(Number(faturamento) || 0),
+          pct_pj: Math.round(Number(pctPJ) || 0),
+        })
+        .catch(() => {});
+      return res.json({
+        naoOptante: true,
+        nome: cadastro.razaoSocial || null,
+        cnpj: cnpjFmt,
+        creditosRestantes: cotaService.creditosRestantes(usuarioId), // não debita
+      });
+    }
 
     // NÚCLEO — motor de decisão (regra de ouro da seção 4 + Calculadora como fonte de alíquota).
     const resultado = await motorDecisao.comparar({
