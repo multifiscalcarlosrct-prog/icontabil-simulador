@@ -193,9 +193,9 @@ $('#btn-enviar-otp').addEventListener('click', async () => {
   }
   $('#otp-pedir').hidden = true;
   $('#otp-confirmar').hidden = false;
-  // Dica para ambiente de desenvolvimento (código sai no console do servidor).
+  // Orientação ao usuário sobre onde achar o código.
   const dev = $('#otp-dev');
-  dev.textContent = 'Em desenvolvimento, o código aparece no console do servidor.';
+  dev.textContent = 'Enviamos o código para o seu e-mail. Não recebeu? Verifique a caixa de spam/lixo eletrônico ou clique em "Reenviar código".';
   dev.hidden = false;
 });
 
