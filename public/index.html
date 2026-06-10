@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>iContábil IA — Simulador de Regime Tributário</title>
+  <link rel="stylesheet" href="/css/app.css" />
+</head>
+<body>
+  <header class="topo">
+    <span class="marca">iContábil <b>IA</b></span>
+    <span class="topo-sub">Simulador de Regime Tributário · Reforma (IBS/CBS)</span>
+  </header>
+
+  <!-- Indicador de etapas (fluxo da seção 6) -->
+  <ol class="stepper" id="stepper">
+    <li data-step="cnpj" class="ativo">CNPJ</li>
+    <li data-step="perguntas">Perguntas</li>
+    <li data-step="otp">Verificação</li>
+    <li data-step="resultado">Resultado</li>
+  </ol>
+
+  <main class="container">
+
+    <!-- PASSO 1 — CNPJ (preview livre, sem cota) -->
+    <section class="passo ativo" id="passo-cnpj">
+      <h1>Descubra o regime mais vantajoso na Reforma Tributária</h1>
+      <p class="lead">Informe o CNPJ para um diagnóstico cadastral. A simulação completa
+        compara <b>Simples puro vs. híbrido</b> e indica a melhor opção.</p>
+
+      <label for="cnpj">CNPJ</label>
+      <div class="linha">
+        <input id="cnpj" inputmode="numeric" placeholder="00.000.000/0000-00" autocomplete="off" />
+        <button id="btn-preview" class="btn">Consultar</button>
+      </div>
+      <p class="erro" id="cnpj-erro" hidden></p>
+
+      <div class="card-preview" id="preview" hidden></div>
+
+      <button id="btn-ir-perguntas" class="btn primario" hidden>Continuar →</button>
+    </section>
+
+    <!-- PASSO 2 — As 5 perguntas (seção 4) -->
+    <section class="passo" id="passo-perguntas" hidden>
+      <h2>Sobre o seu negócio</h2>
+      <p class="lead">Poucas perguntas — a mais decisiva é o perfil do seu cliente.</p>
+
+      <label for="faturamento">Faturamento anual (R$)</label>
+      <input id="faturamento" inputmode="decimal" placeholder="ex.: 380.000" />
+
+      <label for="pctPJ">Quanto das suas vendas é para outras empresas (CNPJ)?
+        <span class="dica">Empresas aproveitam o crédito de IBS/CBS; o consumidor final (pessoa física) não.
+          O restante entra como consumidor final.</span></label>
+      <div class="linha-pct">
+        <input type="number" id="pctPJ" min="0" max="100" step="1" placeholder="ex.: 60" />
+        <span class="sufixo">%</span>
+      </div>
+      <p class="derivado">Consumidor final / pessoa física: <b id="pctCF-out">—</b></p>
+
+      <label for="pesoInsumos">Quanto dos seus custos é compra de produtos e insumos?
+        <span class="dica">Compras de mercadorias, matéria-prima e insumos geram crédito de IBS/CBS.
+          Salários e mão de obra não geram. Informe a fatia aproximada.</span></label>
+      <div class="linha-pct">
+        <input type="number" id="pesoInsumos" min="0" max="100" step="1" placeholder="ex.: 30" />
+        <span class="sufixo">%</span>
+      </div>
+
+      <label for="setor">Setor</label>
+      <select id="setor">
+        <option value="comercio">Comércio</option>
+        <option value="servico">Serviço</option>
+        <option value="industria">Indústria</option>
+        <option value="rural">Rural / Agro</option>
+      </select>
+
+      <!-- Fator R — só para serviço (define Anexo III x V) -->
+      <div id="bloco-fatorr" hidden>
+        <label for="folha">Folha de salários nos últimos 12 meses (R$)
+          <span class="dica">inclui pró-labore + encargos; define o Fator R</span></label>
+        <input id="folha" inputmode="decimal" placeholder="ex.: 120.000" />
+        <p class="derivado">Fator R: <b id="fatorr-out">—</b> <span id="fatorr-anexo"></span></p>
+      </div>
+
+      <div class="acoes">
+        <button class="btn" data-voltar="cnpj">← Voltar</button>
+        <button id="btn-gerar" class="btn primario">Gerar relatório →</button>
+      </div>
+    </section>
+
+    <!-- PASSO 3 — Verificação por OTP -->
+    <section class="passo" id="passo-otp" hidden>
+      <h2>Confirme seu contato</h2>
+      <p class="lead">Enviamos um código para liberar seu relatório. São
+        <b>3 relatórios gratuitos</b>.</p>
+
+      <div id="otp-pedir">
+        <label for="contato">Seu e-mail</label>
+        <input id="contato" type="email" placeholder="voce@email.com" autocomplete="email" />
+        <button id="btn-enviar-otp" class="btn primario">Enviar código</button>
+      </div>
+
+      <div id="otp-confirmar" hidden>
+        <label for="codigo">Código recebido</label>
+        <input id="codigo" inputmode="numeric" maxlength="6" placeholder="000000" />
+        <button id="btn-verificar-otp" class="btn primario">Verificar e gerar</button>
+        <button id="btn-reenviar" class="btn link">Reenviar código</button>
+      </div>
+
+      <p class="erro" id="otp-erro" hidden></p>
+      <p class="aviso-dev" id="otp-dev" hidden></p>
+    </section>
+
+    <!-- PASSO 4 — Resultado -->
+    <section class="passo" id="passo-resultado" hidden>
+      <div id="resultado-conteudo"></div>
+    </section>
+
+  </main>
+
+  <footer class="rodape">
+    Simulação/orientação preliminar — não substitui análise individualizada por contador
+    habilitado. Alíquotas da Reforma ainda provisórias. iContábil IA · CRC BA 024.174/O-3.
+  </footer>
+
+  <script src="/js/app.js" type="module"></script>
+</body>
+</html>

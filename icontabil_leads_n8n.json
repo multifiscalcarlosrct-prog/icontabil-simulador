@@ -1,0 +1,533 @@
+{
+  "name": "iContábil IA — Captura e Nutrição de Leads",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "icontabil-lead",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "node-webhook-001",
+      "name": "Webhook — Recebe Lead",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 400],
+      "webhookId": "wh-main-icontabil-001"
+    },
+    {
+      "parameters": {
+        "mode": "rules",
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": { "caseSensitive": false, "typeValidation": "loose" },
+                "conditions": [
+                  {
+                    "id": "cond-rural",
+                    "leftValue": "={{ $json.setor }}",
+                    "rightValue": "rural",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ],
+                "combinator": "or"
+              },
+              "renameOutput": true,
+              "outputKey": "Produtor Rural"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": false, "typeValidation": "loose" },
+                "conditions": [
+                  {
+                    "id": "cond-paywall",
+                    "leftValue": "={{ $json.creditos }}",
+                    "rightValue": 0,
+                    "operator": { "type": "number", "operation": "equals" }
+                  }
+                ],
+                "combinator": "or"
+              },
+              "renameOutput": true,
+              "outputKey": "Paywall"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": false, "typeValidation": "loose" },
+                "conditions": [
+                  {
+                    "id": "cond-contador",
+                    "leftValue": "={{ $json.setor }}",
+                    "rightValue": "contabilidade",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ],
+                "combinator": "or"
+              },
+              "renameOutput": true,
+              "outputKey": "Contador"
+            }
+          ]
+        },
+        "options": { "fallbackOutput": "extra" }
+      },
+      "id": "node-switch-001",
+      "name": "Classificar Segmento",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [260, 400]
+    },
+
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.WHATSAPP_API_URL }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "apikey", "value": "={{ $env.WHATSAPP_API_KEY }}" }]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParameters": {
+          "parameters": [
+            { "name": "number", "value": "={{ $json.contato }}" },
+            { "name": "text", "value": "={{ 'Olá! 👋 Aqui é o Carlos, da *iContábil IA*.\n\nVi que você acabou de simular o regime tributário de *' + $json.nome + '* na nossa ferramenta.\n\nSua análise ficou pronta e a recomendação foi o *regime ' + $json.recomendacao + '* — o que faz sentido dado que ' + $json.pct_pj + '% das suas vendas são para outras empresas.\n\nFiz uma anotação aqui e quero conversar um pouco mais sobre o seu caso antes de setembro, porque dependendo do seu volume de compras com crédito, a economia pode ser maior do que o simulador mostra.\n\nPosso te ligar agora ou você prefere agendar um horário? 📅' }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-rural-t0",
+      "name": "Rural — WhatsApp T+0",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [540, 0]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
+        "text": "={{ '🔥 *LEAD RURAL — ALTA PRIORIDADE*\n\n🏢 Empresa: ' + $json.nome + '\n📄 CNPJ: ' + $json.cnpj + '\n💰 Faturamento: ' + $json.faturamento + '\n📊 % PJ: ' + $json.pct_pj + '%\n✅ Recomendação: ' + $json.recomendacao + '\n📞 Contato: ' + $json.contato + '\n\n⚡ Entrar em contato em até 1 hora!' }}",
+        "additionalFields": { "parse_mode": "Markdown" }
+      },
+      "id": "node-rural-telegram",
+      "name": "Rural — Alerta Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [820, 0],
+      "credentials": {
+        "telegramApi": {
+          "id": "SUBSTITUIR_ID_CREDENCIAL_TELEGRAM",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resume": "timeInterval",
+        "unit": "days",
+        "amount": 1
+      },
+      "id": "node-rural-wait1",
+      "name": "Rural — Aguardar 1 dia",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [1100, 0],
+      "webhookId": "wh-rural-wait1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.WHATSAPP_API_URL }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "apikey", "value": "={{ $env.WHATSAPP_API_KEY }}" }]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParameters": {
+          "parameters": [
+            { "name": "number", "value": "={{ $json.contato }}" },
+            { "name": "text", "value": "={{ 'Bom dia! Carlos da *iContábil IA* novamente. 🌱\n\nSó passando pra reforçar: a janela para definir o regime de IBS/CBS fecha em *30 de setembro*. Quem não decide fica no Simples puro por padrão — e para quem vende bastante pra pessoa jurídica, isso pode significar perder competitividade.\n\nNo caso de *' + $json.nome + '*, o regime ' + $json.recomendacao + ' parece o mais vantajoso. Mas isso precisa de uma análise um pouco mais fina antes de formalizar.\n\nMe chama aqui quando puder — 10 minutinhos bastam. 👇' }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-rural-t1",
+      "name": "Rural — WhatsApp T+1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1380, 0]
+    },
+    {
+      "parameters": {
+        "resume": "timeInterval",
+        "unit": "days",
+        "amount": 3
+      },
+      "id": "node-rural-wait2",
+      "name": "Rural — Aguardar 3 dias",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [1660, 0],
+      "webhookId": "wh-rural-wait2"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.WHATSAPP_API_URL }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "apikey", "value": "={{ $env.WHATSAPP_API_KEY }}" }]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParameters": {
+          "parameters": [
+            { "name": "number", "value": "={{ $json.contato }}" },
+            { "name": "text", "value": "={{ 'Olá! Setembro chega rápido e a decisão do regime tributário não pode ficar pra última hora.\n\nPara *' + $json.nome + '*, uma escolha errada agora pode custar caro em 2027 — seja em carga tributária maior, seja perdendo crédito pra seus clientes PJ.\n\nSe quiser, faço uma análise personalizada *sem custo* antes de você decidir. Só me chama. 👇\n\n_Carlos Silva — CRC BA 024.174/O-3_\n_iContábil IA — Contabilidade Rural do Oeste da Bahia_' }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-rural-t4",
+      "name": "Rural — WhatsApp T+4",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1940, 0]
+    },
+
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.WHATSAPP_API_URL }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "apikey", "value": "={{ $env.WHATSAPP_API_KEY }}" }]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParameters": {
+          "parameters": [
+            { "name": "number", "value": "={{ $json.contato }}" },
+            { "name": "text", "value": "={{ 'Olá! 👋 Sou o Carlos, da *iContábil IA*.\n\nVocê simulou o regime de *' + $json.nome + '* agora mesmo e o resultado apontou para o *' + $json.recomendacao + '*.\n\nEsse resultado leva em conta que ' + $json.pct_pj + '% das suas vendas são para pessoas jurídicas. Se esse número mudar — ou se você tiver dúvida sobre como isso foi calculado — me chama aqui que a gente revisa.\n\nA decisão precisa ser tomada até *30/setembro*. 📅\n\n_Carlos Silva — CRC BA 024.174/O-3_' }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-comercio-t0",
+      "name": "Comercio — WhatsApp T+0",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [540, 260]
+    },
+    {
+      "parameters": {
+        "resume": "timeInterval",
+        "unit": "days",
+        "amount": 2
+      },
+      "id": "node-comercio-wait1",
+      "name": "Comercio — Aguardar 2 dias",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [820, 260],
+      "webhookId": "wh-comercio-wait1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.WHATSAPP_API_URL }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "apikey", "value": "={{ $env.WHATSAPP_API_KEY }}" }]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParameters": {
+          "parameters": [
+            { "name": "number", "value": "={{ $json.contato }}" },
+            { "name": "text", "value": "={{ 'Oi, tudo bem? 😊\n\nSó lembrando que a opção pelo regime de IBS/CBS vence em *30 de setembro* — e muita gente está deixando pra última hora sem saber o impacto que isso tem.\n\nPara *' + $json.nome + '*, a análise já está pronta. Se quiser entender melhor o que muda na prática pra você, é só me chamar.\n\nNenhum custo, sem compromisso. 👇' }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-comercio-t2",
+      "name": "Comercio — WhatsApp T+2",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1100, 260]
+    },
+    {
+      "parameters": {
+        "resume": "timeInterval",
+        "unit": "days",
+        "amount": 3
+      },
+      "id": "node-comercio-wait2",
+      "name": "Comercio — Aguardar 3 dias",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [1380, 260],
+      "webhookId": "wh-comercio-wait2"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.WHATSAPP_API_URL }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "apikey", "value": "={{ $env.WHATSAPP_API_KEY }}" }]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParameters": {
+          "parameters": [
+            { "name": "number", "value": "={{ $json.contato }}" },
+            { "name": "text", "value": "={{ 'Olá! Última mensagem sobre isso, prometo. 😄\n\nSetembro está chegando e a janela tributária fecha. Se *' + $json.nome + '* ainda não definiu o regime, vale uma conversa rápida antes de decidir no escuro.\n\nTô à disposição aqui. 👇\n\n_iContábil IA — contabilidade especializada em rural e agronegócio_\n_Barreiras/BA | 100% digital_' }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-comercio-t5",
+      "name": "Comercio — WhatsApp T+5",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1660, 260]
+    },
+
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.WHATSAPP_API_URL }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "apikey", "value": "={{ $env.WHATSAPP_API_KEY }}" }]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParameters": {
+          "parameters": [
+            { "name": "number", "value": "={{ $json.contato }}" },
+            { "name": "text", "value": "={{ 'Olá! 👋 Carlos da *iContábil IA*.\n\nVi que você usou as 3 consultas gratuitas da ferramenta — o que me diz que você tem mais de uma empresa pra analisar antes de setembro.\n\nPosso fazer isso por você. Se me passar os CNPJs que faltam, rodo as análises pessoalmente e te entrego um relatório completo de cada uma — *sem cobrar por consulta agora*.\n\nMe chama aqui. 👇' }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-paywall-t0",
+      "name": "Paywall — WhatsApp T+0",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [540, 520]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
+        "text": "={{ '🚨 *LEAD PAYWALL — ALTÍSSIMA PRIORIDADE*\n\n🏢 Empresa: ' + $json.nome + '\n📄 CNPJ: ' + $json.cnpj + '\n💰 Faturamento: ' + $json.faturamento + '\n📊 Setor: ' + $json.setor + '\n📞 Contato: ' + $json.contato + '\n\n🔥 Usou as 3 consultas grátis! Abordar AGORA.' }}",
+        "additionalFields": { "parse_mode": "Markdown" }
+      },
+      "id": "node-paywall-telegram",
+      "name": "Paywall — Alerta Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [820, 520],
+      "credentials": {
+        "telegramApi": {
+          "id": "SUBSTITUIR_ID_CREDENCIAL_TELEGRAM",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resume": "timeInterval",
+        "unit": "days",
+        "amount": 1
+      },
+      "id": "node-paywall-wait1",
+      "name": "Paywall — Aguardar 1 dia",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [1100, 520],
+      "webhookId": "wh-paywall-wait1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.WHATSAPP_API_URL }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "apikey", "value": "={{ $env.WHATSAPP_API_KEY }}" }]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParameters": {
+          "parameters": [
+            { "name": "number", "value": "={{ $json.contato }}" },
+            { "name": "text", "value": "Oi! Carlos da iContábil IA novamente.\n\nQuem consulta mais de 3 empresas geralmente é contador ou empresário com mais de um CNPJ — e é exatamente pra esse perfil que faço questão de atender direto.\n\nTemos uma solução de *acesso ilimitado* que pode fazer sentido pro seu caso, mas antes de falar em plano, quero entender o que você precisa.\n\nMe conta: quantas empresas você está analisando? 👇" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-paywall-t1",
+      "name": "Paywall — WhatsApp T+1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1380, 520]
+    },
+
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.WHATSAPP_API_URL }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "apikey", "value": "={{ $env.WHATSAPP_API_KEY }}" }]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParameters": {
+          "parameters": [
+            { "name": "number", "value": "={{ $json.contato }}" },
+            { "name": "text", "value": "={{ 'Olá! 👋 Carlos da *iContábil IA* — contabilidade rural do Oeste da Bahia.\n\nVi que você usou nossa ferramenta para analisar *' + $json.nome + '*. Se você é contador, provavelmente tem uma carteira de clientes pra analisar antes de setembro.\n\nTenho uma proposta diferente pra você: em vez de você fazer isso um por um, posso te oferecer *acesso ilimitado* ou até uma parceria pra você oferecer a ferramenta com a sua marca.\n\nFaz sentido conversarmos? 👇' }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-contador-t0",
+      "name": "Contador — WhatsApp T+0",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [540, 780]
+    },
+    {
+      "parameters": {
+        "resume": "timeInterval",
+        "unit": "days",
+        "amount": 2
+      },
+      "id": "node-contador-wait1",
+      "name": "Contador — Aguardar 2 dias",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [820, 780],
+      "webhookId": "wh-contador-wait1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.WHATSAPP_API_URL }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "apikey", "value": "={{ $env.WHATSAPP_API_KEY }}" }]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParameters": {
+          "parameters": [
+            { "name": "number", "value": "={{ $json.contato }}" },
+            { "name": "text", "value": "Oi! Passando rapidinho.\n\nA janela de setembro é uma oportunidade de ouro pra você se posicionar como especialista em reforma tributária com os seus clientes — e a ferramenta pode ajudar nisso.\n\nSe quiser, posso mostrar como outros contadores estão usando isso pra captar cliente agora. Sem compromisso. 👇\n\n_Carlos Silva — CRC BA 024.174/O-3_\n_iContábil IA_" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-contador-t2",
+      "name": "Contador — WhatsApp T+2",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1100, 780]
+    }
+  ],
+
+  "connections": {
+    "Webhook — Recebe Lead": {
+      "main": [
+        [{ "node": "Classificar Segmento", "type": "main", "index": 0 }]
+      ]
+    },
+    "Classificar Segmento": {
+      "main": [
+        [{ "node": "Rural — WhatsApp T+0", "type": "main", "index": 0 }],
+        [{ "node": "Paywall — WhatsApp T+0", "type": "main", "index": 0 }],
+        [{ "node": "Contador — WhatsApp T+0", "type": "main", "index": 0 }],
+        [{ "node": "Comercio — WhatsApp T+0", "type": "main", "index": 0 }]
+      ]
+    },
+    "Rural — WhatsApp T+0": {
+      "main": [
+        [{ "node": "Rural — Alerta Telegram", "type": "main", "index": 0 }]
+      ]
+    },
+    "Rural — Alerta Telegram": {
+      "main": [
+        [{ "node": "Rural — Aguardar 1 dia", "type": "main", "index": 0 }]
+      ]
+    },
+    "Rural — Aguardar 1 dia": {
+      "main": [
+        [{ "node": "Rural — WhatsApp T+1", "type": "main", "index": 0 }]
+      ]
+    },
+    "Rural — WhatsApp T+1": {
+      "main": [
+        [{ "node": "Rural — Aguardar 3 dias", "type": "main", "index": 0 }]
+      ]
+    },
+    "Rural — Aguardar 3 dias": {
+      "main": [
+        [{ "node": "Rural — WhatsApp T+4", "type": "main", "index": 0 }]
+      ]
+    },
+    "Comercio — WhatsApp T+0": {
+      "main": [
+        [{ "node": "Comercio — Aguardar 2 dias", "type": "main", "index": 0 }]
+      ]
+    },
+    "Comercio — Aguardar 2 dias": {
+      "main": [
+        [{ "node": "Comercio — WhatsApp T+2", "type": "main", "index": 0 }]
+      ]
+    },
+    "Comercio — WhatsApp T+2": {
+      "main": [
+        [{ "node": "Comercio — Aguardar 3 dias", "type": "main", "index": 0 }]
+      ]
+    },
+    "Comercio — Aguardar 3 dias": {
+      "main": [
+        [{ "node": "Comercio — WhatsApp T+5", "type": "main", "index": 0 }]
+      ]
+    },
+    "Paywall — WhatsApp T+0": {
+      "main": [
+        [{ "node": "Paywall — Alerta Telegram", "type": "main", "index": 0 }]
+      ]
+    },
+    "Paywall — Alerta Telegram": {
+      "main": [
+        [{ "node": "Paywall — Aguardar 1 dia", "type": "main", "index": 0 }]
+      ]
+    },
+    "Paywall — Aguardar 1 dia": {
+      "main": [
+        [{ "node": "Paywall — WhatsApp T+1", "type": "main", "index": 0 }]
+      ]
+    },
+    "Contador — WhatsApp T+0": {
+      "main": [
+        [{ "node": "Contador — Aguardar 2 dias", "type": "main", "index": 0 }]
+      ]
+    },
+    "Contador — Aguardar 2 dias": {
+      "main": [
+        [{ "node": "Contador — WhatsApp T+2", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "versionId": "icontabil-v1-2026",
+  "id": "icontabil-leads-flow",
+  "meta": { "templateCredsSetupCompleted": false },
+  "tags": [],
+  "pinData": {}
+}

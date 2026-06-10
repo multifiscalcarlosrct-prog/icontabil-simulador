@@ -1,0 +1,3 @@
+# Calculadora oficial IBS/CBS (REST local) — seção 3 do CLAUDE.md.
+# Serviço open source embarcado, instalado aqui na etapa de integração real do motor.
+# No MVP, src/services/calculadoraService.js aponta para CALCULADORA_URL (mockado se vazio).

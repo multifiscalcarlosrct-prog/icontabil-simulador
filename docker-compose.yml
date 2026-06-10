@@ -1,0 +1,24 @@
+# Deploy do iContábil Simulador na VPS (Docker + Traefik).
+# Traefik (já rodando) faz roteamento + HTTPS automático via Let's Encrypt.
+# Sobe com: docker compose up -d --build
+services:
+  simulador:
+    build: .
+    container_name: simulador
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./data:/app/data # persiste o SQLite fora do container
+    networks:
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.simulador.rule=Host(`simulador.icontabil.shop`)"
+      - "traefik.http.routers.simulador.entrypoints=websecure"
+      - "traefik.http.routers.simulador.tls.certresolver=letsencrypt"
+      - "traefik.http.services.simulador.loadbalancer.server.port=3000"
+      - "traefik.docker.network=simulador_web"
+
+networks:
+  web:
+    name: simulador_web

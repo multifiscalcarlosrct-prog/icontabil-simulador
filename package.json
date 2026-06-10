@@ -1,0 +1,25 @@
+{
+  "name": "icontabil-simulador",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "iContábil IA — Simulador de Regime Tributário (Reforma Tributária IBS/CBS). MVP v1.",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "db:init": "node src/db/index.js --init",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.2.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "pdfkit": "^0.15.0"
+  },
+  "devDependencies": {}
+}
