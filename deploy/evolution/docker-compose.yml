@@ -28,7 +28,8 @@ services:
       # Cache local resolve para o nosso caso (um número/instância).
       - CACHE_REDIS_ENABLED=false
       - CACHE_LOCAL_ENABLED=true
-      - LOG_LEVEL=ERROR
+      - LOG_LEVEL=ERROR,WARN,INFO,LOG
+      - LOG_BAILEYS=warn
     volumes:
       - evolution_instances:/evolution/instances
     networks:
