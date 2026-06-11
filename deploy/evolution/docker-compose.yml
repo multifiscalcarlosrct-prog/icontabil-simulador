@@ -24,11 +24,10 @@ services:
       - DATABASE_SAVE_MESSAGE_UPDATE=false
       - DATABASE_SAVE_DATA_CONTACTS=true
       - DATABASE_SAVE_DATA_CHATS=true
-      - CACHE_REDIS_ENABLED=true
-      - CACHE_REDIS_URI=redis://evolution-redis:6379/6
-      - CACHE_REDIS_PREFIX_KEY=evolution
-      - CACHE_REDIS_SAVE_INSTANCES=true
-      - CACHE_LOCAL_ENABLED=false
+      # Redis desligado: causava a instância presa em "connecting" (bug conhecido v2).
+      # Cache local resolve para o nosso caso (um número/instância).
+      - CACHE_REDIS_ENABLED=false
+      - CACHE_LOCAL_ENABLED=true
       - LOG_LEVEL=ERROR
     volumes:
       - evolution_instances:/evolution/instances
