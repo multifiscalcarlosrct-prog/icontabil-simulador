@@ -76,6 +76,45 @@ function renderPreview(d) {
     $('#btn-ir-perguntas').hidden = false;
     return;
   }
+  if (d.optanteSimples === false) {
+    // OPÇÃO A: não-optante do Simples — bloqueia já no preview (a comparação não se aplica)
+    // e oferece captura de contato para análise personalizada (lead).
+    box.innerHTML = `
+      <h3>${d.razaoSocial || 'Empresa'}</h3>
+      <p class="obs"><b>Esta empresa não é optante do Simples Nacional.</b></p>
+      <p class="obs">A escolha entre Simples <b>puro</b> e <b>híbrido</b> (CGSN nº 186/2026) é exclusiva
+        de optantes do Simples. Empresas no regime regular (Lucro Presumido/Real) já apuram o IBS/CBS
+        "por fora" — então esta simulação não se aplica ao seu caso.</p>
+      <p class="obs">Quer entender o impacto da Reforma Tributária na sua operação?
+        Deixe seu contato que a <b>iContábil IA</b> faz uma análise personalizada:</p>
+      <div class="linha">
+        <input id="lead-contato" placeholder="Seu e-mail ou WhatsApp" autocomplete="email" />
+        <button class="btn primario" id="btn-lead-contato">Quero uma análise</button>
+      </div>
+      <p class="erro" id="lead-erro" hidden></p>`;
+    box.hidden = false;
+    $('#btn-ir-perguntas').hidden = true; // não segue para as perguntas
+    $('#btn-lead-contato').addEventListener('click', async () => {
+      const contato = ($('#lead-contato').value || '').trim();
+      const erro = $('#lead-erro');
+      erro.hidden = true;
+      if (contato.length < 8) {
+        erro.textContent = 'Informe um e-mail ou WhatsApp válido.';
+        erro.hidden = false;
+        return;
+      }
+      $('#btn-lead-contato').disabled = true;
+      const { ok } = await api('/api/lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contato, cnpj: estado.cnpj, nome: d.razaoSocial, motivo: 'nao_optante_simples' }),
+      });
+      box.querySelector('.linha').outerHTML = ok
+        ? '<p class="obs"><b>Recebemos! ✅</b> A iContábil IA entra em contato em breve.</p>'
+        : '<p class="erro">Não foi possível enviar agora — tente novamente.</p>';
+    });
+    return;
+  }
   const linhas = [
     ['Razão social', d.razaoSocial],
     ['CNAE', d.cnaeDescricao || d.cnae],
