@@ -1,0 +1,78 @@
+# Evolution API (WhatsApp não-oficial) — para a nutrição de leads do simulador.
+# Roda na VPS ao lado do n8n/Traefik. O n8n manda as mensagens via esta API.
+# Sobe com: docker compose up -d
+services:
+  evolution:
+    image: evolutionapi/evolution-api:latest
+    container_name: evolution
+    restart: unless-stopped
+    depends_on:
+      - evolution-postgres
+      - evolution-redis
+    env_file: .env
+    environment:
+      - SERVER_URL=https://evo.icontabil.shop
+      - SERVER_PORT=8080
+      - AUTHENTICATION_API_KEY=${EVO_API_KEY}
+      - DEL_INSTANCE=false
+      - DATABASE_ENABLED=true
+      - DATABASE_PROVIDER=postgresql
+      - DATABASE_CONNECTION_URI=postgresql://evolution:${EVO_DB_PASS}@evolution-postgres:5432/evolution
+      - DATABASE_CONNECTION_CLIENT_NAME=evolution
+      - DATABASE_SAVE_DATA_INSTANCE=true
+      - DATABASE_SAVE_DATA_NEW_MESSAGE=false
+      - DATABASE_SAVE_MESSAGE_UPDATE=false
+      - DATABASE_SAVE_DATA_CONTACTS=true
+      - DATABASE_SAVE_DATA_CHATS=true
+      - CACHE_REDIS_ENABLED=true
+      - CACHE_REDIS_URI=redis://evolution-redis:6379/6
+      - CACHE_REDIS_PREFIX_KEY=evolution
+      - CACHE_REDIS_SAVE_INSTANCES=true
+      - CACHE_LOCAL_ENABLED=false
+      - LOG_LEVEL=ERROR
+    volumes:
+      - evolution_instances:/evolution/instances
+    networks:
+      - web
+      - internal
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.evolution.rule=Host(`evo.icontabil.shop`)
+      - traefik.http.routers.evolution.entrypoints=websecure
+      - traefik.http.routers.evolution.tls.certresolver=letsencrypt
+      - traefik.http.services.evolution.loadbalancer.server.port=8080
+      - traefik.docker.network=evolution_web
+
+  evolution-postgres:
+    image: postgres:15-alpine
+    container_name: evolution-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=evolution
+      - POSTGRES_PASSWORD=${EVO_DB_PASS}
+      - POSTGRES_DB=evolution
+    volumes:
+      - evolution_pg:/var/lib/postgresql/data
+    networks:
+      - internal
+
+  evolution-redis:
+    image: redis:7-alpine
+    container_name: evolution-redis
+    restart: unless-stopped
+    command: redis-server --save 60 1 --appendonly no
+    volumes:
+      - evolution_redis:/data
+    networks:
+      - internal
+
+volumes:
+  evolution_instances:
+  evolution_pg:
+  evolution_redis:
+
+networks:
+  web:
+    name: evolution_web # Traefik (host) roteia para este bridge
+  internal:
+    name: evolution_internal # postgres/redis isolados, sem exposição
