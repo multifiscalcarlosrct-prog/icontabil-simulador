@@ -3,7 +3,7 @@
 # Sobe com: docker compose up -d
 services:
   evolution:
-    image: evoapicloud/evolution-api:2.4.0-rc2
+    image: evoapicloud/evolution-api:v2.3.7
     container_name: evolution
     restart: unless-stopped
     depends_on:
