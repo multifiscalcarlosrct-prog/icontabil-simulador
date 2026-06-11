@@ -107,7 +107,12 @@ function renderPreview(d) {
       const { ok } = await api('/api/lead', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contato, cnpj: estado.cnpj, nome: d.razaoSocial, motivo: 'nao_optante_simples' }),
+        body: JSON.stringify({
+          contato,
+          cnpj: (estado.cnpj || '').replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5'),
+          nome: d.razaoSocial,
+          motivo: 'nao_optante_simples',
+        }),
       });
       box.querySelector('.linha').outerHTML = ok
         ? '<p class="obs"><b>Recebemos! ✅</b> A iContábil IA entra em contato em breve.</p>'
@@ -217,12 +222,21 @@ $('#btn-enviar-otp').addEventListener('click', async () => {
     erro.hidden = false;
     return;
   }
+  // WhatsApp obrigatório: 10–11 dígitos (DDD + número), com ou sem o 55 na frente.
+  const whatsapp = ($('#whatsapp').value || '').replace(/\D/g, '');
+  const whatsOk = whatsapp.length === 10 || whatsapp.length === 11 ||
+    (whatsapp.startsWith('55') && (whatsapp.length === 12 || whatsapp.length === 13));
+  if (!whatsOk) {
+    erro.textContent = 'Digite um WhatsApp válido, com DDD. Ex.: (77) 99999-0000';
+    erro.hidden = false;
+    return;
+  }
   estado.contato = contato;
   $('#btn-enviar-otp').disabled = true;
   const { ok, dados } = await api('/api/auth/solicitar-otp', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contato }),
+    body: JSON.stringify({ contato, whatsapp }),
   });
   $('#btn-enviar-otp').disabled = false;
   if (!ok) {

@@ -33,7 +33,13 @@ app.use('/api/pagamento', pagamentoRoutes); // v2
 app.get('/api/health', (_req, res) => res.json({ ok: true, env: env.nodeEnv }));
 
 // --- Front estático do MVP ---
-app.use(express.static(path.join(__dirname, '..', 'public')));
+// no-cache = o navegador revalida a cada visita (ETag/304) → atualizações aparecem
+// sem precisar de Ctrl+F5 após cada deploy.
+app.use(
+  express.static(path.join(__dirname, '..', 'public'), {
+    setHeaders: (res) => res.setHeader('Cache-Control', 'no-cache'),
+  }),
+);
 
 // --- Tratador de erro centralizado ---
 // eslint-disable-next-line no-unused-vars

@@ -34,6 +34,7 @@ export async function simular(req, res, next) {
         .enviarLead({
           tipo: 'nao_optante_simples',
           contato: req.usuario.contato,
+          whatsapp: req.usuario.whatsapp || null,
           nome: cadastro.razaoSocial || '(razão social indisponível)',
           cnpj: cnpjFmt,
           regime_atual: 'Não optante pelo Simples',
@@ -82,7 +83,8 @@ export async function simular(req, res, next) {
       leadService
         .enviarLead({
           tipo: 'simulacao',
-          contato: req.usuario.contato, // hoje = e-mail; vira WhatsApp quando capturarmos o telefone
+          contato: req.usuario.contato, // e-mail
+          whatsapp: req.usuario.whatsapp || null, // 55+DDD+número — base da nutrição
           nome: cadastro.razaoSocial || '(razão social indisponível)',
           cnpj: cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5'),
           regime_atual: regimeAtual,

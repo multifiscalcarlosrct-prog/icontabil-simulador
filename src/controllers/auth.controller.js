@@ -2,18 +2,25 @@
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env.js';
 import { normalizaEmail } from '../utils/normalizaEmail.js';
+import { normalizaWhatsapp } from '../utils/normalizaWhatsapp.js';
 import * as otpService from '../services/otpService.js';
 import * as leadService from '../services/leadService.js';
 import * as usuarioRepo from '../db/repositories/usuarioRepo.js';
 
 // POST /api/auth/solicitar-otp
-// Cria/acha usuário não verificado e envia o código. Não revela se o contato já existia.
+// Cria/acha usuário não verificado, grava o WhatsApp e envia o código.
+// Não revela se o contato já existia.
 export async function solicitarOtp(req, res, next) {
   try {
     const contato = normalizaEmail(req.body?.contato || '');
     if (!contato) return res.status(400).json({ erro: 'Informe um e-mail válido.' });
 
+    // WhatsApp obrigatório (decisão de funil): é a base da nutrição de leads.
+    const whatsapp = normalizaWhatsapp(req.body?.whatsapp || '');
+    if (!whatsapp) return res.status(400).json({ erro: 'Informe um WhatsApp válido, com DDD.' });
+
     const usuario = usuarioRepo.acharOuCriarPorContato(contato);
+    usuarioRepo.salvarWhatsapp(usuario.id, whatsapp);
     await otpService.gerarEEnviar(usuario.id, contato);
 
     // Resposta neutra de propósito (não vaza existência de conta).
@@ -38,7 +45,9 @@ export async function verificarOtp(req, res, next) {
     if (!ok) return res.status(400).json({ erro: 'Código inválido ou expirado.' });
 
     usuarioRepo.marcarVerificado(usuario.id);
-    leadService.enviarLead({ tipo: 'contato_verificado', contato }).catch(() => {});
+    leadService
+      .enviarLead({ tipo: 'contato_verificado', contato, whatsapp: usuario.whatsapp || null })
+      .catch(() => {});
 
     const token = jwt.sign({ uid: usuario.id, contato }, env.jwtSecret, { expiresIn: '30d' });
     res.json({ ok: true, token });

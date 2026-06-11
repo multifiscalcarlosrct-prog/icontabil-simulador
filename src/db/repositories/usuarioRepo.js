@@ -22,6 +22,10 @@ export function marcarVerificado(id) {
   db.prepare('UPDATE usuarios SET verificado = 1 WHERE id = ?').run(id);
 }
 
+export function salvarWhatsapp(id, whatsapp) {
+  db.prepare('UPDATE usuarios SET whatsapp = ? WHERE id = ?').run(whatsapp, id);
+}
+
 // --- OTP ---
 
 export function salvarOtp({ usuarioId, contato, codigo, expiraEm }) {

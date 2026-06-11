@@ -3,6 +3,7 @@
 CREATE TABLE IF NOT EXISTS usuarios (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
   contato     TEXT NOT NULL UNIQUE,           -- e-mail/celular já normalizado
+  whatsapp    TEXT,                           -- 55 + DDD + número (normalizado); base da nutrição
   verificado  INTEGER NOT NULL DEFAULT 0,     -- 0/1
   plano       TEXT NOT NULL DEFAULT 'free',   -- free | pago
   criado_em   INTEGER NOT NULL                -- epoch ms
