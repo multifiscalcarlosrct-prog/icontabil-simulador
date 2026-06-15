@@ -4,7 +4,6 @@ import { env } from '../config/env.js';
 import { normalizaEmail } from '../utils/normalizaEmail.js';
 import { normalizaWhatsapp } from '../utils/normalizaWhatsapp.js';
 import * as otpService from '../services/otpService.js';
-import * as leadService from '../services/leadService.js';
 import * as usuarioRepo from '../db/repositories/usuarioRepo.js';
 
 // POST /api/auth/solicitar-otp
@@ -31,7 +30,10 @@ export async function solicitarOtp(req, res, next) {
 }
 
 // POST /api/auth/verificar-otp
-// Valida o código, marca verificado, abre sessão e dispara lead para o N8N.
+// Valida o código, marca verificado e abre sessão.
+// NÃO dispara lead aqui de propósito: o lead de 'contato_verificado' não tem os dados da
+// simulação (nome/recomendação/% PJ) e caía no fallback de Comércio da nutrição, gerando
+// mensagem de WhatsApp com "undefined". O lead que nutre é o de 'simulacao' (logo em seguida).
 export async function verificarOtp(req, res, next) {
   try {
     const contato = normalizaEmail(req.body?.contato || '');
@@ -45,9 +47,6 @@ export async function verificarOtp(req, res, next) {
     if (!ok) return res.status(400).json({ erro: 'Código inválido ou expirado.' });
 
     usuarioRepo.marcarVerificado(usuario.id);
-    leadService
-      .enviarLead({ tipo: 'contato_verificado', contato, whatsapp: usuario.whatsapp || null })
-      .catch(() => {});
 
     const token = jwt.sign({ uid: usuario.id, contato }, env.jwtSecret, { expiresIn: '30d' });
     res.json({ ok: true, token });
