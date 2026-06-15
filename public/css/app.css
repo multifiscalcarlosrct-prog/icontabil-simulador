@@ -221,3 +221,60 @@ select option { background: #14141f; }
 .cta-lead b { color: var(--verde-claro); text-shadow: var(--glow-verde); }
 .cta-lead p { margin: 0.35rem 0 0; color: var(--texto-suave); font-size: 0.9rem; }
 .disclaimer { font-size: 0.78rem; color: var(--texto-suave); margin-top: 1.25rem; }
+
+/* --- Plano ilimitado (paywall) --- */
+.plano-box {
+  margin-top: 1.25rem; padding: 1.35rem 1.4rem; border-radius: 16px;
+  background: linear-gradient(135deg, #14141f, #1a1030);
+  border: 1px solid var(--roxo); box-shadow: var(--glow-roxo);
+}
+.plano-cabecalho { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+.plano-cabecalho b { font-size: 1.15rem; color: #fff; }
+.plano-cabecalho p { margin: 0.2rem 0 0; color: var(--texto-suave); font-size: 0.88rem; }
+.plano-preco { text-align: right; white-space: nowrap; }
+.plano-preco span {
+  display: block; font-size: 1.9rem; font-weight: 800; color: var(--verde-claro);
+  text-shadow: var(--glow-verde); line-height: 1;
+}
+.plano-preco small { font-size: 0.72rem; color: var(--texto-suave); }
+.plano-beneficios { list-style: none; margin: 1.1rem 0 0.4rem; padding: 0; }
+.plano-beneficios li { color: var(--texto-suave); font-size: 0.9rem; padding: 0.28rem 0 0.28rem 1.6rem; position: relative; }
+.plano-beneficios li::before {
+  content: "✓"; position: absolute; left: 0; color: var(--verde-claro);
+  font-weight: 800; text-shadow: var(--glow-verde);
+}
+.plano-box .btn.primario { width: 100%; margin-top: 0.8rem; }
+
+/* --- Pix (QR + copia e cola) --- */
+.pix-box {
+  margin-top: 1.25rem; padding: 1.4rem; border-radius: 16px;
+  background: #0d0d16; border: 1px solid var(--borda);
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+}
+.pix-qr {
+  width: 224px; height: 224px; border-radius: 12px; background: #fff; padding: 10px;
+  box-shadow: var(--glow-verde);
+}
+.pix-qr.placeholder {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.3rem;
+  background: repeating-conic-gradient(#1c1c2b 0% 25%, #14141f 0% 50%) 50% / 22px 22px;
+  color: var(--texto-suave); border: 1px dashed var(--borda); box-shadow: none;
+}
+.pix-qr.placeholder span { font-weight: 700; color: var(--texto); }
+.pix-qr.placeholder small { font-size: 0.72rem; }
+.pix-box > label { margin-top: 1.1rem; font-size: 0.78rem; color: var(--texto-suave); text-transform: uppercase; letter-spacing: 0.05em; }
+.pix-copia { display: flex; gap: 0.5rem; width: 100%; margin-top: 0.4rem; }
+.pix-copia input {
+  flex: 1; min-width: 0; padding: 0.7rem 0.8rem; font-size: 0.82rem; font-family: ui-monospace, monospace;
+  color: var(--texto); background: var(--surface); border: 1px solid var(--borda); border-radius: 10px;
+}
+.pix-copia .btn { margin-top: 0; white-space: nowrap; }
+.pix-status {
+  margin: 1.2rem 0 0; display: flex; align-items: center; gap: 0.5rem; justify-content: center;
+  color: var(--roxo-claro); font-size: 0.92rem; font-weight: 600;
+}
+.spinner {
+  width: 16px; height: 16px; border-radius: 50%; display: inline-block;
+  border: 2px solid var(--borda); border-top-color: var(--roxo); animation: girar 0.8s linear infinite;
+}
+@keyframes girar { to { transform: rotate(360deg); } }

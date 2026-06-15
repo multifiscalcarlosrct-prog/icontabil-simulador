@@ -279,6 +279,7 @@ $('#btn-verificar-otp').addEventListener('click', async () => {
 
 // ======================= PASSO 4 — Simulação / Resultado =======================
 async function rodarSimulacao() {
+  pararPolling();
   irPara('resultado');
   const box = $('#resultado-conteudo');
   box.innerHTML = '<p class="lead">Gerando seu relatório…</p>';
@@ -337,7 +338,7 @@ function renderNaoOptante({ nome, cnpj }) {
   $('#btn-nova').addEventListener('click', reiniciar);
 }
 
-function renderResultado({ id, resultado, creditosRestantes, reaproveitado }) {
+function renderResultado({ id, resultado, creditosRestantes, reaproveitado, ilimitado }) {
   const r = resultado;
   const vencedor = r.recomendacao === 'hibrido' ? 'Simples Híbrido' : 'Simples Puro';
   const hib = r.cenarios.simplesHibrido;
@@ -379,7 +380,7 @@ function renderResultado({ id, resultado, creditosRestantes, reaproveitado }) {
     <p class="premissas">Alíquota do regime regular usada: ${(r.premissas.aliquotaRegimeRegular * 100).toFixed(1)}%
       (${r.premissas.fonteAliquota === 'calculadora' ? 'Calculadora oficial' : 'estimativa de referência'}).${simplesTxt}
       ${reaproveitado ? 'CNPJ já consultado — recalculado sem consumir novo crédito.' : ''}
-      Créditos restantes: <b>${creditosRestantes}</b>.</p>
+      ${ilimitado ? 'Plano ilimitado ativo ✓' : `Créditos restantes: <b>${creditosRestantes}</b>`}.</p>
 
     <div class="acoes">
       <button class="btn primario" id="btn-pdf" data-id="${id}">Baixar relatório (PDF)</button>
@@ -398,18 +399,108 @@ function renderResultado({ id, resultado, creditosRestantes, reaproveitado }) {
   $('#btn-nova').addEventListener('click', reiniciar);
 }
 
+// ======================= PAYWALL + PAGAMENTO (Pix) =======================
+let pollTimer = null;
+function pararPolling() {
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+}
+
 function renderPaywall(dados) {
   $('#resultado-conteudo').innerHTML = `
     <div class="banner-rec paywall">
+      <span class="rec-tag">Limite atingido</span>
       <strong>Você usou seus 3 relatórios gratuitos 🎉</strong>
-      <p>${dados.erro || ''} Para simulações ilimitadas, fale com a iContábil IA.</p>
+      <p>${dados.erro || ''} Gostou da ferramenta? Libere <b>relatórios ilimitados</b> com um único pagamento.</p>
     </div>
-    <div class="cta-lead">
-      <b>Plano ilimitado</b>
-      <p>Libere relatórios sem limite e o acompanhamento da sua opção pelo regime.</p>
+
+    <div class="plano-box">
+      <div class="plano-cabecalho">
+        <div>
+          <b>Plano ilimitado</b>
+          <p>Simulações sem limite, para sempre.</p>
+        </div>
+        <div class="plano-preco"><span>R$ 9,99</span><small>pagamento único</small></div>
+      </div>
+      <ul class="plano-beneficios">
+        <li>Relatórios e PDFs ilimitados</li>
+        <li>Compare quantos CNPJs quiser</li>
+        <li>Liberação imediata após o Pix</li>
+      </ul>
+      <button class="btn primario" id="btn-pagar">Liberar agora com Pix</button>
     </div>
-    <button class="btn" id="btn-nova">Voltar</button>`;
+
+    <button class="btn" id="btn-nova">Voltar</button>
+    <p class="disclaimer">Pagamento via Pix com liberação automática assim que for confirmado.</p>`;
+  $('#btn-pagar').addEventListener('click', iniciarPagamento);
   $('#btn-nova').addEventListener('click', reiniciar);
+}
+
+async function iniciarPagamento() {
+  const btn = $('#btn-pagar');
+  btn.disabled = true;
+  btn.textContent = 'Gerando Pix…';
+  const { ok, status, dados } = await api('/api/pagamento/criar', {
+    method: 'POST',
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: '{}',
+  });
+  if (status === 401 || status === 403) { localStorage.removeItem(TOKEN_KEY); irPara('otp'); return; }
+  if (dados.jaPago) { rodarSimulacao(); return; }
+  if (!ok || !dados.txid) {
+    btn.disabled = false;
+    btn.textContent = 'Liberar agora com Pix';
+    btn.insertAdjacentHTML('afterend', `<p class="erro">${dados.erro || 'Não foi possível gerar a cobrança. Tente novamente.'}</p>`);
+    return;
+  }
+  renderPix(dados);
+  iniciarPolling(dados.txid);
+}
+
+function renderPix({ qrCode, qrCodeBase64 }) {
+  const imagem = qrCodeBase64
+    ? `<img class="pix-qr" src="${qrCodeBase64}" alt="QR Code Pix" />`
+    : `<div class="pix-qr placeholder"><span>QR simulado</span><small>use o código abaixo</small></div>`;
+  $('#resultado-conteudo').innerHTML = `
+    <div class="banner-rec">
+      <span class="rec-tag">Plano ilimitado · R$ 9,99</span>
+      <strong>Pague com Pix para liberar</strong>
+      <p>Escaneie o QR Code no app do seu banco ou copie o código. A liberação é <b>automática</b>.</p>
+    </div>
+    <div class="pix-box">
+      ${imagem}
+      <label for="pix-codigo">Pix copia e cola</label>
+      <div class="pix-copia">
+        <input id="pix-codigo" readonly value="${qrCode}" />
+        <button class="btn" id="btn-copiar">Copiar</button>
+      </div>
+      <p class="pix-status" id="pix-status"><span class="spinner"></span> Aguardando pagamento…</p>
+    </div>
+    <button class="btn" id="btn-cancelar">Cancelar</button>`;
+  $('#btn-copiar').addEventListener('click', () => {
+    const inp = $('#pix-codigo');
+    inp.select();
+    navigator.clipboard?.writeText(inp.value).catch(() => {});
+    $('#btn-copiar').textContent = 'Copiado!';
+    setTimeout(() => ($('#btn-copiar').textContent = 'Copiar'), 1500);
+  });
+  $('#btn-cancelar').addEventListener('click', () => { pararPolling(); reiniciar(); });
+}
+
+function iniciarPolling(txid) {
+  pararPolling();
+  pollTimer = setInterval(async () => {
+    const { ok, dados } = await api(`/api/pagamento/status/${txid}`, { headers: authHeaders() });
+    if (!ok) return;
+    const s = $('#pix-status');
+    if (dados.status === 'pago') {
+      pararPolling();
+      if (s) s.innerHTML = '✅ Pagamento confirmado! Liberando seu acesso…';
+      setTimeout(() => rodarSimulacao(), 1200);
+    } else if (dados.status === 'expirado') {
+      pararPolling();
+      if (s) s.textContent = 'A cobrança expirou. Volte e gere uma nova.';
+    }
+  }, 3000);
 }
 
 async function baixarPdf() {
@@ -429,6 +520,7 @@ async function baixarPdf() {
 }
 
 function reiniciar() {
+  pararPolling();
   estado.respostas = null;
   $('#cnpj').value = '';
   $('#preview').hidden = true;

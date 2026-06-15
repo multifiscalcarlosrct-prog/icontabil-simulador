@@ -103,7 +103,8 @@ export async function simular(req, res, next) {
       id,
       reaproveitado: !!existente, // true = CNPJ repetido, não consumiu novo crédito
       resultado,
-      creditosRestantes: cotaService.creditosRestantes(usuarioId),
+      creditosRestantes: cotaService.creditosRestantes(usuarioId), // null = ilimitado
+      ilimitado: cotaService.planoIlimitado(usuarioId),
     });
   } catch (err) {
     next(err);
@@ -129,7 +130,10 @@ export async function baixarPdf(req, res, next) {
 // GET /api/cota
 export async function cota(req, res, next) {
   try {
-    res.json({ creditosRestantes: cotaService.creditosRestantes(req.usuario.id) });
+    res.json({
+      creditosRestantes: cotaService.creditosRestantes(req.usuario.id), // null = ilimitado
+      ilimitado: cotaService.planoIlimitado(req.usuario.id),
+    });
   } catch (err) {
     next(err);
   }

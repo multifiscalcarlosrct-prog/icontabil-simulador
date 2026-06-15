@@ -30,3 +30,18 @@ CREATE TABLE IF NOT EXISTS otp (
 );
 
 CREATE INDEX IF NOT EXISTS idx_otp_usuario ON otp(usuario_id, usado);
+
+-- Cobranças Pix do plano ilimitado (R$ 9,99, pagamento único → usuarios.plano = 'pago').
+CREATE TABLE IF NOT EXISTS pagamentos (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  usuario_id     INTEGER NOT NULL REFERENCES usuarios(id),
+  provedor       TEXT NOT NULL,                 -- mock | mercadopago
+  txid           TEXT NOT NULL,                 -- id da cobrança no provedor
+  valor_centavos INTEGER NOT NULL,
+  status         TEXT NOT NULL DEFAULT 'pendente', -- pendente | pago | expirado
+  criado_em      INTEGER NOT NULL,              -- epoch ms
+  pago_em        INTEGER                        -- epoch ms (quando confirmou)
+);
+
+CREATE INDEX IF NOT EXISTS idx_pagamentos_txid ON pagamentos(txid);
+CREATE INDEX IF NOT EXISTS idx_pagamentos_usuario ON pagamentos(usuario_id);

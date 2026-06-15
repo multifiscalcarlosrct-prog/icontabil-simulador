@@ -26,6 +26,11 @@ export function salvarWhatsapp(id, whatsapp) {
   db.prepare('UPDATE usuarios SET whatsapp = ? WHERE id = ?').run(whatsapp, id);
 }
 
+// Plano ilimitado após o pagamento confirmado (não há downgrade automático: pagamento único).
+export function marcarPago(id) {
+  db.prepare("UPDATE usuarios SET plano = 'pago' WHERE id = ?").run(id);
+}
+
 // --- OTP ---
 
 export function salvarOtp({ usuarioId, contato, codigo, expiraEm }) {
