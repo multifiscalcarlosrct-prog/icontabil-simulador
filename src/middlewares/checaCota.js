@@ -1,5 +1,6 @@
 // Bloqueia/avisa paywall quando os créditos acabaram (seção 6).
 // Roda DEPOIS de exigeVerificado (precisa de req.usuario). Não debita CNPJ em cache.
+import { env } from '../config/env.js';
 import * as cotaService from '../services/cotaService.js';
 import { validaCnpj } from '../utils/validaCnpj.js';
 
@@ -12,6 +13,7 @@ export function checaCota(req, res, next) {
       erro: 'Você usou seus 3 relatórios gratuitos.',
       paywall: true,
       creditosRestantes: 0,
+      precoCentavos: env.planoPrecoCentavos, // front mostra o preço real (não hardcoded)
     });
   }
   next();

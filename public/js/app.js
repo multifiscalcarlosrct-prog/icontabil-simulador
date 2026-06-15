@@ -15,6 +15,8 @@ const estado = {
 };
 
 const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
+// Preço do plano (centavos → BRL com centavos). Fallback 999 = R$ 9,99 se o backend não mandar.
+const precoBRL = (centavos) => ((Number(centavos) || 999) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const getToken = () => localStorage.getItem(TOKEN_KEY);
 const setToken = (t) => localStorage.setItem(TOKEN_KEY, t);
 
@@ -419,7 +421,7 @@ function renderPaywall(dados) {
           <b>Plano ilimitado</b>
           <p>Simulações sem limite, para sempre.</p>
         </div>
-        <div class="plano-preco"><span>R$ 9,99</span><small>pagamento único</small></div>
+        <div class="plano-preco"><span>${precoBRL(dados.precoCentavos)}</span><small>pagamento único</small></div>
       </div>
       <ul class="plano-beneficios">
         <li>Relatórios e PDFs ilimitados</li>
@@ -456,13 +458,13 @@ async function iniciarPagamento() {
   iniciarPolling(dados.txid);
 }
 
-function renderPix({ qrCode, qrCodeBase64 }) {
+function renderPix({ qrCode, qrCodeBase64, valorCentavos }) {
   const imagem = qrCodeBase64
     ? `<img class="pix-qr" src="${qrCodeBase64}" alt="QR Code Pix" />`
     : `<div class="pix-qr placeholder"><span>QR simulado</span><small>use o código abaixo</small></div>`;
   $('#resultado-conteudo').innerHTML = `
     <div class="banner-rec">
-      <span class="rec-tag">Plano ilimitado · R$ 9,99</span>
+      <span class="rec-tag">Plano ilimitado · ${precoBRL(valorCentavos)}</span>
       <strong>Pague com Pix para liberar</strong>
       <p>Escaneie o QR Code no app do seu banco ou copie o código. A liberação é <b>automática</b>.</p>
     </div>
