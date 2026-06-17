@@ -41,6 +41,9 @@ export const env = {
   appBaseUrl: (process.env.APP_BASE_URL || 'http://localhost:3000').replace(/\/$/, ''),
   mpAccessToken: process.env.MP_ACCESS_TOKEN || '',
   mockPixDelayMs: Number(process.env.MOCK_PIX_DELAY_MS) || 5000, // mock auto-confirma após isso
+
+  // --- Painel de admin (leitura dos dados do simulador) ---
+  adminToken: process.env.ADMIN_TOKEN || '',
 };
 
 export const isDev = env.nodeEnv !== 'production';
@@ -59,5 +62,8 @@ if (!isDev) {
     console.warn('[AVISO] PIX_PROVIDER=mock em produção: cobranças são FICTÍCIAS e auto-confirmam. Use mercadopago.');
   } else if (env.pixProvider === 'mercadopago' && !env.mpAccessToken) {
     console.warn('[AVISO] PIX_PROVIDER=mercadopago sem MP_ACCESS_TOKEN: as cobranças vão falhar.');
+  }
+  if (!env.adminToken) {
+    console.warn('[AVISO] ADMIN_TOKEN não definido: o painel de admin (/admin) ficará inacessível.');
   }
 }

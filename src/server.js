@@ -11,6 +11,7 @@ import authRoutes from './routes/auth.routes.js';
 import simulacaoRoutes from './routes/simulacao.routes.js';
 import leadRoutes from './routes/lead.routes.js';
 import pagamentoRoutes from './routes/pagamento.routes.js';
+import adminRoutes from './routes/admin.routes.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -28,6 +29,7 @@ app.use('/api/simulacao', simulacaoRoutes);
 app.use('/api/cota', simulacaoRoutes); // GET /api/cota também mora no controller de simulação
 app.use('/api/lead', leadRoutes); // captura de contato (ex.: não-optante no preview)
 app.use('/api/pagamento', pagamentoRoutes); // Pix do plano ilimitado
+app.use('/api/admin', adminRoutes); // painel de leads (protegido por ADMIN_TOKEN)
 
 // Health check simples.
 app.get('/api/health', (_req, res) => res.json({ ok: true, env: env.nodeEnv }));
