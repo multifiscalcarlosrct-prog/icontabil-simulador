@@ -8,8 +8,8 @@
 // O IPI (Anexo II) NÃO entra (não é substituído por IBS/CBS), por isso é excluído da fatia.
 //
 // FONTE das tabelas: partilha do Simples Nacional, Anexos I, II, III e V (ver
-// docs/calibracao-simples.md). ⚠️ REVISAR/HOMOLOGAR com o contador responsável (CRC)
-// antes de uso em produção — números fiscais exigem conferência.
+// docs/calibracao-simples.md). ✅ HOMOLOGADO por Carlos A. Silva (CRC BA 024.174/O-3) em
+// 18/06/2026 — valores e premissas conferidos e aprovados para uso em produção.
 
 // Cada faixa: ate = limite superior da RBT12; nominal = alíquota nominal; deduz = parcela a
 // deduzir; shareIbsCbs = fração do DAS correspondente a IBS/CBS (PIS+COFINS+ICMS/ISS).

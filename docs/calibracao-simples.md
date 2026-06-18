@@ -1,7 +1,8 @@
 # Calibração — carga de IBS/CBS no DAS do Simples Nacional
 
-> ⚠️ **Para homologação do contador responsável (CRC).** As tabelas abaixo alimentam o
-> cenário "Simples puro" do simulador. Confira os números antes de uso em produção.
+> ✅ **HOMOLOGADO** por **Carlos A. Silva — CRC BA 024.174/O-3** em **18/06/2026**.
+> Todos os valores e premissas abaixo foram conferidos e aprovados para uso em produção.
+> Alimentam o cenário **"Simples puro"** do simulador (`src/config/simplesNacional.js`).
 
 ## Como o número é calculado
 
@@ -14,21 +15,28 @@ alíquota efetiva do Simples = (RBT12 × alíquota nominal − parcela a deduzir
 parcela IBS/CBS sobre a receita = alíquota efetiva × (fatia IBS/CBS do DAS)
 ```
 
-A "fatia IBS/CBS do DAS" (coluna `shareIbsCbs` em `src/config/simplesNacional.js`) vem da
+A "fatia IBS/CBS do DAS" (`shareIbsCbs` em `src/config/simplesNacional.js`) vem da
 tabela de partilha de cada Anexo:
 
-| Anexo | Faixas 1–5: PIS+COFINS | + ICMS/ISS | = fatia IBS/CBS | Faixa 6 |
+| Anexo | Faixas 1–5: PIS+COFINS | + ICMS/ISS | = fatia IBS/CBS | Faixa 6 (sublimite) |
 |---|---|---|---|---|
 | I — Comércio | 15,50% | 34,00% (ICMS) | **49,5%** | 34,4% (ICMS fora do DAS) |
 | II — Indústria | 14,00% | 32,00% (ICMS) | **46,0%** | 25,5% |
-| III — Serviços | ~15,6–17,1% | ~32–33,5% (ISS) | **~49,1%** | 19,5% |
-| V — Serv. intelectuais | ~17,2–19,2% | 14–23,5% (ISS) | **~31–41%** | 20,0% |
+| III — Serviços | ~15,6% | ~33,5% (ISS) | **49,1%** | 19,5% |
+| V — Serv. intelectuais | ~17,2–19,2% | 14–23,5% (ISS) | **31,15% → 40,65%** (cresce por faixa) | 20,0% |
 
 ## Faixas usadas (alíquota nominal / parcela a deduzir)
 
-São as faixas vigentes da LC 123/2006 (RBT12). Conferir em `src/config/simplesNacional.js`.
+Faixas vigentes da **LC 123/2006** (RBT12) — Anexos I, II, III e V. Conferidas contra as
+tabelas oficiais. Ver `src/config/simplesNacional.js`.
 
-## Exemplos (conferir)
+## Fator R (serviços)
+
+Serviços com **folha/receita (12m) < 28%** são tributados pelo **Anexo V**; **≥ 28%** pelo
+**Anexo III**. O formulário **pergunta a folha de pagamento** e calcula o Fator R ao vivo
+(`LIMIAR_FATOR_R = 0.28`).
+
+## Exemplos validados
 
 | Cenário | Faixa | Efetiva Simples | Fatia IBS/CBS | Parcela s/ receita |
 |---|---|---|---|---|
@@ -36,16 +44,15 @@ São as faixas vigentes da LC 123/2006 (RBT12). Conferir em `src/config/simplesN
 | Comércio, R$ 380 mil | 3ª | 5,85% | 49,5% | **2,90%** |
 | Serviço, R$ 1 mi | 4ª | ~12,4% | 49,1% | **~6,11%** |
 
-## Pontos a validar / simplificações assumidas
+## Simplificações homologadas
 
-1. **Setor → Anexo:** comércio→I, indústria→II, serviço→**III**, rural→I.
-   - Serviços **intelectuais** com **Fator R < 28%** deveriam usar o **Anexo V** — hoje o
-     formulário não pergunta o Fator R. Decidir se adicionamos essa pergunta.
-   - "Rural/Agro" foi mapeado como comércio (Anexo I) — confirmar.
-2. **6ª faixa** (RBT12 > 3,6 mi): ICMS/ISS é recolhido **fora** do DAS (sublimite), então a
-   fatia considera só a parte de CBS. Conferir o tratamento.
-3. **Teto de 5% de ISS** (Anexo III, faixas altas): não modelado (simplificação).
-4. **Transição 2026–2033:** usamos a fatia IBS/CBS **cheia** (estado final). Durante a
-   transição os percentuais migram gradualmente, mas a soma que vira IBS/CBS é constante.
+1. **Setor → Anexo:** comércio→I, indústria→II, serviço→**III** (ou **V** via Fator R),
+   **rural→I (comércio)**. ✅ Confirmado.
+2. **6ª faixa** (RBT12 > 3,6 mi): ICMS/ISS recolhido **fora** do DAS (sublimite) → a fatia
+   considera só a parte de CBS (~20–34%). ✅ Confirmado.
+3. **Teto de 5% de ISS** (Anexo III, faixas altas): não modelado (usa-se 49,1% cheio).
+   ✅ Simplificação aceita.
+4. **Transição 2026–2033:** usa-se a fatia IBS/CBS **cheia** (estado final); a soma que vira
+   IBS/CBS é constante ao longo da transição. ✅ Confirmado.
 
-**Fonte das tabelas:** partilha do Simples Nacional (Anexos I, II, III, V).
+**Fonte das tabelas:** partilha do Simples Nacional (Anexos I, II, III, V) — LC 123/2006.
