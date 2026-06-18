@@ -3,18 +3,21 @@ import assert from 'node:assert/strict';
 import { montaOperacao, extraiTotais, aliquotaEfetiva } from '../src/services/calculadoraService.js';
 
 test('montaOperacao monta o IOperacaoInput conforme contrato oficial', () => {
-  const op = montaOperacao({ uf: 'BA', valor: 10000, setor: 'servico' });
+  const op = montaOperacao({ uf: 'BA', valor: 10000 });
   assert.equal(op.uf, 'BA');
   assert.ok(op.municipio > 0);
+  assert.ok(op.id && op.versao); // campos obrigatórios validados ao vivo no piloto
   assert.equal(op.itens.length, 1);
   assert.equal(op.itens[0].baseCalculo, 10000);
-  assert.equal(op.itens[0].nbs, '101011900'); // serviço usa NBS
-  assert.ok(!('ncm' in op.itens[0]));
-  assert.match(op.dataHoraEmissao, /T/);
+  assert.equal(op.itens[0].ncm, '39269090'); // NCM neutro (padrão, sem IS/redução)
+  assert.equal(op.itens[0].cst, '000');
+  assert.equal(op.itens[0].cClassTrib, '000001');
+  // data no formato exigido (sem milissegundos, com fuso) e em regime pleno
+  assert.match(op.dataHoraEmissao, /^2033-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}-03:00$/);
 
-  const opCom = montaOperacao({ uf: 'SP', municipioIBGE: 3550308, valor: 500, setor: 'comercio' });
-  assert.equal(opCom.municipio, 3550308);
-  assert.equal(opCom.itens[0].ncm, '22021000'); // comércio usa NCM
+  const opSp = montaOperacao({ uf: 'SP', municipioIBGE: 3550308, valor: 500 });
+  assert.equal(opSp.municipio, 3550308);
+  assert.equal(opSp.itens[0].baseCalculo, 500);
 });
 
 test('extraiTotais lê vIBS + vCBS dos totais oficiais', () => {

@@ -1,29 +1,36 @@
 // Integração com a Calculadora oficial IBS/CBS (Regime Geral) — seção 3 do CLAUDE.md.
 // A Calculadora é um motor POR OPERAÇÃO; aqui a usamos para estimar a alíquota efetiva
-// do regime regular por localidade. Sem CALCULADORA_URL configurada, opera mockado.
+// PADRÃO do regime regular (sonda de R$ 10.000). Sem CALCULADORA_URL, opera mockado.
 import { env } from '../config/env.js';
 import { tributos } from '../config/tributos.js';
 import { ROTA_REGIME_GERAL, operacaoRepresentativa as OP } from '../config/calculadora.js';
 
 const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
 
-// Monta o IOperacaoInput (contrato oficial) para uma operação representativa.
-export function montaOperacao({ uf, municipioIBGE, valor, setor }) {
-  const cls = OP.porSetor[String(setor || '').toLowerCase()] || OP.porSetor._padrao;
-  const item = {
-    numero: 1,
-    cst: OP.cst,
-    cClassTrib: OP.cClassTrib,
-    baseCalculo: num(valor),
-    quantidade: OP.quantidade,
-    unidade: OP.unidade,
-  };
-  item[cls.tipo] = cls.codigo; // 'ncm' OU 'nbs'
+// Data no formato exigido pela Calculadora: 'yyyy-MM-ddTHH:mm:ss-03:00' (sem milissegundos).
+function dataHoraEmissao() {
+  return `${OP.dataReferencia}T12:00:00-03:00`;
+}
+
+// Monta o IOperacaoInput (contrato oficial) para a operação representativa padrão.
+export function montaOperacao({ uf, municipioIBGE, valor }) {
   return {
-    dataHoraEmissao: new Date().toISOString(),
+    id: OP.id,
+    versao: OP.versao,
+    dataHoraEmissao: dataHoraEmissao(),
     uf: uf || OP.ufPadrao,
     municipio: municipioIBGE || OP.municipioIBGEPadrao,
-    itens: [item],
+    itens: [
+      {
+        numero: 1,
+        ncm: OP.ncm,
+        cst: OP.cst,
+        cClassTrib: OP.cClassTrib,
+        baseCalculo: num(valor),
+        quantidade: OP.quantidade,
+        unidade: OP.unidade,
+      },
+    ],
   };
 }
 
@@ -45,25 +52,42 @@ export function extraiTotais(data, valor) {
 }
 
 // Calcula os tributos de UMA operação na Calculadora oficial. Lança em caso de falha.
-export async function calcularOperacao({ uf, municipioIBGE, valor, setor }) {
+export async function calcularOperacao({ uf, municipioIBGE, valor }) {
   if (!env.calculadoraUrl) return mock(valor);
-  const resp = await fetch(`${env.calculadoraUrl}${ROTA_REGIME_GERAL}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: JSON.stringify(montaOperacao({ uf, municipioIBGE, valor, setor })),
-  });
-  if (!resp.ok) throw new Error(`Calculadora oficial retornou ${resp.status}`);
-  return extraiTotais(await resp.json(), valor);
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), 12_000); // não trava a simulação se o piloto demorar
+  try {
+    const resp = await fetch(`${env.calculadoraUrl}${ROTA_REGIME_GERAL}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify(montaOperacao({ uf, municipioIBGE, valor })),
+      signal: ctrl.signal,
+    });
+    if (!resp.ok) throw new Error(`Calculadora oficial retornou ${resp.status}`);
+    return extraiTotais(await resp.json(), valor);
+  } finally {
+    clearTimeout(t);
+  }
 }
 
-// Alíquota efetiva de IBS/CBS (total/valor). É a "fonte confiável" da carga do regime regular
-// para o motor de decisão. Em qualquer falha, cai na alíquota de referência (estimativa).
-export async function aliquotaEfetiva({ uf, municipioIBGE, setor } = {}) {
+// A alíquota PADRÃO é uniforme nacionalmente no piloto (estados ainda não fixam alíquota
+// própria), então usamos uma operação representativa única (UF/município padrão) e cacheamos
+// um só valor — evita descasamento UF×município e deixa a simulação rápida.
+let cacheAliquota = null;
+
+// Alíquota efetiva de IBS/CBS (total/valor): a "fonte confiável" da carga do regime regular.
+// Em qualquer falha, cai na alíquota de referência (estimativa) e NÃO cacheia (tenta de novo).
+export async function aliquotaEfetiva() {
+  if (cacheAliquota) return cacheAliquota;
   const base = 10_000;
   try {
-    const r = await calcularOperacao({ uf, municipioIBGE, valor: base, setor });
+    const r = await calcularOperacao({ valor: base }); // usa UF/município padrão (representativo)
     const aliquota = r.total / base;
-    if (aliquota > 0) return { aliquota, fonte: r._fonte };
+    if (aliquota > 0) {
+      const res = { aliquota, fonte: r._fonte };
+      if (r._fonte === 'calculadora') cacheAliquota = res; // cacheia só o oficial
+      return res;
+    }
   } catch {
     /* abaixo: fallback */
   }

@@ -1,37 +1,32 @@
 // Integração com a Calculadora oficial IBS/CBS (Reforma Tributária) — Regime Geral.
 //
-// Contrato VERIFICADO no código-fonte da lib CalculadoraRTC (github.com/andre-djsystem)
-// e na documentação oficial (piloto-cbs.tributos.gov.br):
-//   POST {base}/calculadora/regime-geral   body: IOperacaoInput
-//   resposta: { objetos:[...], total: { tribCalc: { ISTot:{vIS}, IBSCBSTot:{ vBCIBSCBS,
-//              gIBS:{ gIBSUF:{vIBSUF}, gIBSMun:{vIBSMun}, vIBS }, gCBS:{ vCBS } } } } }
+// Contrato VALIDADO AO VIVO contra o piloto oficial da RFB (2026-06):
+//   POST {base}/calculadora/regime-geral
+//   body: { id, versao, dataHoraEmissao:'yyyy-MM-ddTHH:mm:ss-03:00', uf, municipio, itens:[...] }
+//   resposta: total.tribCalc.IBSCBSTot.{ gIBS.vIBS, gCBS.vCBS, vBCIBSCBS }
 //
-// Bases conhecidas (definir em CALCULADORA_URL):
-//   - Offline (jar local):  http://localhost:8080/api
-//   - Piloto online:        https://piloto-cbs.tributos.gov.br/servico/calculadora-consumo/api
+// Base (CALCULADORA_URL):
+//   - Piloto online: https://piloto-cbs.tributos.gov.br/servico/calculadora-consumo/api
+//   - Offline (jar): http://localhost:8080/api
 
 export const ROTA_REGIME_GERAL = '/calculadora/regime-geral';
 
-// Operação REPRESENTATIVA usada apenas para ESTIMAR a alíquota efetiva do regime regular
-// (não é uma operação fiscal real). A Calculadora é por-operação; aqui mandamos uma operação
-// "padrão" de valor conhecido e derivamos a alíquota = (vIBS + vCBS) / valor.
-//
-// ⚠️ Os códigos abaixo são PLACEHOLDERS e PRECISAM ser validados contra as tabelas de
-//    dados-abertos da própria Calculadora (situações-tributárias e classificações por
-//    CBS/IBS) e a realidade da empresa. Enquanto não validados, o serviço cai no fallback.
+// Operação REPRESENTATIVA para estimar a ALÍQUOTA EFETIVA PADRÃO (tributação integral) do
+// IBS/CBS no regime regular. NÃO é uma operação fiscal real — é uma sonda de R$ 10.000.
 export const operacaoRepresentativa = {
-  cst: '000', // tributação integral — confirmar em /dados-abertos/situacoes-tributarias/cbs-ibs
-  cClassTrib: '000001', // classificação padrão — confirmar em /dados-abertos/classificacoes-tributarias/cbs-ibs
+  id: 'icontabil-ref',
+  versao: '1.0.0',
+  // Data de referência = REGIME PLENO. A transição (2026-2032) tem alíquotas reduzidas
+  // (2026 é ano-teste, ~1%); a decisão puro vs. híbrido é sobre o estado pleno (~27%).
+  // O piloto tem regras até 2033; usamos uma data segura dentro do regime cheio.
+  dataReferencia: '2033-07-01',
+  cst: '000', // "Tributação integral" — validado em /dados-abertos/situacoes-tributarias/cbs-ibs
+  cClassTrib: '000001', // "Tributada integralmente, alíquota Padrão" — validado em /classificacoes-tributarias
+  // NCM neutro: "outras obras de plástico". Mercadoria de tributação padrão, SEM redução e
+  // SEM Imposto Seletivo (evita o 422 de NCMs como bebidas/cigarros). Dá a alíquota cheia.
+  ncm: '39269090',
   unidade: 'UN',
   quantidade: 1,
-  // Mercadoria usa NCM; serviço usa NBS. Códigos genéricos por setor (a validar).
-  porSetor: {
-    comercio: { tipo: 'ncm', codigo: '22021000' },
-    industria: { tipo: 'ncm', codigo: '22021000' },
-    servico: { tipo: 'nbs', codigo: '101011900' },
-    rural: { tipo: 'ncm', codigo: '10063021' },
-    _padrao: { tipo: 'ncm', codigo: '22021000' },
-  },
   ufPadrao: 'BA',
-  municipioIBGEPadrao: 2903201, // Barreiras/BA (sede iContábil) — usado quando não há IBGE do cadastro
+  municipioIBGEPadrao: 2903201, // Barreiras/BA (sede iContábil)
 };
