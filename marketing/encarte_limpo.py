@@ -14,6 +14,8 @@ INK      = (23, 33, 39)     # texto escuro
 GRAY     = (104, 122, 134)  # texto secundário
 GREEN    = (22, 163, 74)
 GREEN_HI = (34, 197, 94)
+RED      = (242, 53, 47)     # "i" da logo
+GREEN_BR = (15, 184, 96)     # "ábil" da logo (verde vivo)
 GREEN_LT = (226, 245, 234)  # fundo suave verde
 VIOLET   = (147, 95, 224)
 VIOLET_LT= (240, 233, 251)  # fundo suave violeta
@@ -51,30 +53,17 @@ def grad_rrect(box, r, c1, c2):
     ImageDraw.Draw(m).rounded_rectangle([0, 0, w - 1, h - 1], radius=r, fill=255)
     img.paste(g, (int(x0), int(y0)), m)
 
-# ---------- marca: símbolo + wordmark ----------
-mk = 96 * S
-mx0 = (W - mk) / 2
-grad_rrect([mx0, 88 * S, mx0 + mk, 88 * S + mk], 26 * S, GREEN_HI, VIOLET)
-# símbolo: 3 barras ascendentes (crescimento) em branco
-bw = 11 * S
-bx = mx0 + 24 * S
-for i, bh in enumerate([26, 40, 56]):
-    d.rounded_rectangle([bx + i * (bw + 8 * S), 88 * S + mk - 24 * S - bh * S,
-                         bx + i * (bw + 8 * S) + bw, 88 * S + mk - 24 * S], radius=3 * S, fill=(255, 255, 255))
-
-# wordmark "iContábil IA"
-fw = F("Outfit-Bold.ttf", 46)
-word1, word2 = "iContábil ", "IA"
-w1 = d.textbbox((0, 0), word1, font=fw)[2]
-w2 = d.textbbox((0, 0), word2, font=fw)[2]
-wx = (W - (w1 + w2)) / 2
-yw = 212 * S
-d.text((wx, yw), word1, font=fw, fill=INK)
-d.text((wx + w1, yw), word2, font=fw, fill=GREEN)
-tracked(W / 2, 278 * S, "CONTABILIDADE · REFORMA TRIBUTÁRIA", F("WorkSans-Bold.ttf", 17), GRAY, 4)
+# ---------- logo iContábil ia (i vermelho · Cont preto · ábil verde · ia preto) ----------
+fw = F("WorkSans-Regular.ttf", 60)
+segs = [("i", RED), ("Cont", INK), ("ábil", GREEN_BR), (" ia", INK)]
+tot = sum(d.textbbox((0, 0), t, font=fw)[2] for t, _ in segs)
+x = (W - tot) / 2; yw = 158 * S
+for t, col in segs:
+    d.text((x, yw), t, font=fw, fill=col); x += d.textbbox((0, 0), t, font=fw)[2]
+tracked(W / 2, 242 * S, "CONTABILIDADE · REFORMA TRIBUTÁRIA", F("WorkSans-Bold.ttf", 17), GRAY, 4)
 
 # divisor curto
-d.line([(W / 2 - 40 * S, 322 * S), (W / 2 + 40 * S, 322 * S)], fill=LINE, width=2 * S)
+d.line([(W / 2 - 40 * S, 300 * S), (W / 2 + 40 * S, 300 * S)], fill=LINE, width=2 * S)
 
 # ---------- eyebrow + headline ----------
 tracked(W / 2, 388 * S, "SEU CLIENTE NO SIMPLES NACIONAL", F("WorkSans-Bold.ttf", 19), GREEN, 3)
