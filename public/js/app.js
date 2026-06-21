@@ -78,9 +78,9 @@ function renderPreview(d) {
     $('#btn-ir-perguntas').hidden = false;
     return;
   }
-  if (d.optanteSimples === false) {
-    // OPÇÃO A: não-optante do Simples — bloqueia já no preview (a comparação não se aplica)
-    // e oferece captura de contato para análise personalizada (lead).
+  if (d.naoOptante) {
+    // OPÇÃO A: não-optante do Simples (optanteSimples=false OU porte "DEMAIS") — bloqueia já
+    // no preview (a comparação não se aplica) e oferece captura de contato para análise (lead).
     box.innerHTML = `
       <h3>${d.razaoSocial || 'Empresa'}</h3>
       <p class="obs"><b>Esta empresa não é optante do Simples Nacional.</b></p>
@@ -126,7 +126,7 @@ function renderPreview(d) {
     ['Razão social', d.razaoSocial],
     ['CNAE', d.cnaeDescricao || d.cnae],
     ['Porte', d.porte],
-    ['Optante Simples', d.optanteSimples === true ? 'Sim' : d.optanteSimples === false ? 'Não' : '—'],
+    ['Optante Simples', d.optanteSimples === true ? 'Sim' : d.naoOptante ? 'Não' : '—'],
     ['UF / Município', [d.uf, d.municipio].filter(Boolean).join(' / ')],
   ];
   box.innerHTML =

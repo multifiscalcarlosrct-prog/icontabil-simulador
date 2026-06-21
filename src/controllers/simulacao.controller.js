@@ -26,9 +26,9 @@ export async function simular(req, res, next) {
     const cnpjFmt = cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
 
     // OPÇÃO A: a comparação puro vs. híbrido (CGSN 186/2026) é exclusiva de optante do Simples.
-    // Se o cadastro CONFIRMA que NÃO é optante (false), bloqueia a comparação — mas captura o
-    // lead (ótimo lead) e NÃO debita crédito. Se for null/indeterminado, segue normal.
-    if (cadastro.optanteSimples === false) {
+    // Bloqueia quando o cadastro indica NÃO-optante (optanteSimples=false OU porte "DEMAIS",
+    // que não é ME/EPP) — mas captura o lead (ótimo lead) e NÃO debita crédito. null/ME/EPP segue.
+    if (cadastro.naoOptante) {
       const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
       leadService
         .enviarLead({

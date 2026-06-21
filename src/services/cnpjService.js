@@ -29,6 +29,7 @@ export async function buscarCadastral(cnpj) {
       cnae: null,
       porte: null,
       optanteSimples: null,
+      naoOptante: false, // indisponível → não bloqueia (deixa seguir)
       uf: null,
       municipio: null,
       indisponivel: true,
@@ -40,15 +41,27 @@ export async function buscarCadastral(cnpj) {
   return dados;
 }
 
+// "Não é optante do Simples?" — sinal robusto para a Opção A (bloqueio da comparação).
+// A BrasilAPI às vezes devolve opcao_pelo_simples = null mesmo para empresas que NÃO são do
+// Simples; nesses casos o PORTE resolve: "DEMAIS" não é ME nem EPP, logo não pode ser Simples.
+export function ehNaoOptanteSimples(optanteSimples, porte) {
+  if (optanteSimples === true) return false; // é optante → comparação se aplica
+  if (optanteSimples === false) return true; // explicitamente fora do Simples
+  return String(porte || '').toUpperCase() === 'DEMAIS'; // null + porte não-ME/EPP → não-Simples
+}
+
 // Mapeia o payload da BrasilAPI para o nosso formato enxuto.
 function normalizar(raw) {
+  const optanteSimples = raw.opcao_pelo_simples ?? null;
+  const porte = raw.porte ?? null;
   return {
     cnpj: raw.cnpj,
     razaoSocial: raw.razao_social ?? null,
     cnae: raw.cnae_fiscal ?? null,
     cnaeDescricao: raw.cnae_fiscal_descricao ?? null,
-    porte: raw.porte ?? null,
-    optanteSimples: raw.opcao_pelo_simples ?? null,
+    porte,
+    optanteSimples,
+    naoOptante: ehNaoOptanteSimples(optanteSimples, porte),
     uf: raw.uf ?? null,
     municipio: raw.municipio ?? null,
     situacao: raw.descricao_situacao_cadastral ?? null,
